@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use 5.014;
 
 die "Usage: $0 <project dir>\n" unless $ARGV[0];
 

@@ -3,6 +3,11 @@ Lists the names and versions of all the modules contained within your node_modul
 
 If multiple copies of the same module version are found these will be listed.
 
+## Requirements
+
+* Perl 5.14 or greater
+* A node.js project
+
 ## Usage
 
     ./dep_check.pl <path/to/node/project>
