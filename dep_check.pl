@@ -1,69 +1,26 @@
+#!/usr/bin/env perl
 use strict;
 use warnings;
-use Data::Dumper;
 
-my $deps = ();
+die "Usage: $0 <project dir>\n" unless $ARGV[0];
 
-my @dirs;
+my $deps = getDeps($ARGV[0]);
+outputDeps($deps);
 
-push(@dirs, @{findDirs('.')});
-
-while(my $dir = shift(@dirs)){
-	my $json = readPackage($dir);
-	my $name = getName($json);
-	my $version = getVersion($json);
-	
-	if(!$deps->{$name}){
-		$deps->{$name} = [];
+sub getDeps{
+	chdir(shift);
+	open(my $listHandle, '-|', 'npm ll --parseable') or die "Can't get dependancies: $!\n";
+	my $depHash = ();
+	while(my($name, $version) = <$listHandle> =~ m/\:([^\@]+)\@([^\:]+)\:/){
+		$depHash->{$name} ||= [];
+		push($depHash->{$name}, $version);
 	}
-	
-	unless ( $version ~~ $deps->{$name} ) {
-		push($deps->{$name}, $version);
-	}
-	
-	push(@dirs, @{findDirs($dir)});
+	close($listHandle);
+	$depHash;
 }
 
-print Dumper $deps;
-
-sub findDirs{
-	my $startPath = shift;
-	$startPath .= '/node_modules';
-	opendir(my $dh, $startPath) || return [];
-	my @dirs = grep { !/^\./ && -d "$startPath/$_" } readdir($dh);
-	closedir $dh;
-	my @prefixed = map { "$startPath/$_" } @dirs;
-	return \@prefixed;
-}
-
-sub readPackage{
-	my $path = shift;
-	$path .= '/package.json';
-	open(my $pj, '<', $path) || die;
-	my $contents = "";
-	while(my $line = <$pj>){
-		$contents .= $line;
-	}
-	close $pj;
-	return $contents;
-}
-
-sub getName{
-	my $contents = shift;
-	if($contents =~ m/\"name\"\: \"([^\"]+)\"/){
-		return $1;		
-	}
-	else{
-		die 'could not find name';
-	}
-}
-
-sub getVersion{
-	my $contents = shift;
-	if($contents =~ m/\"version\"\: \"([^\"]+)\"/){
-		return $1;		
-	}
-	else{
-		die 'could not find version';
+sub outputDeps{
+	foreach my $name (sort keys(shift)){
+		printf("%-30s %s\n", $name, join(', ', sort @{$deps->{$name}}));
 	}
 }
